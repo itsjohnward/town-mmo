@@ -131,6 +131,7 @@ function preload() {
 	game.load.image(tileset[i].name, tileset[i].url);
 	game.load.spritesheet("player", "./assets/player.png", 32, 48);
 	level = remote.getGlobal("world");
+	console.log(level);
 }
 
 function create() {
@@ -141,6 +142,7 @@ function create() {
 		x = 0;
 		var temp = [];
 		for (j in level[i]) {
+			console.log(level[i][j]);
 			temp.push(new Tile(level[i][j], x, y));
 			x++;
 		}

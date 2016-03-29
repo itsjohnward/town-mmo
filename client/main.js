@@ -1,12 +1,26 @@
 'use strict';
 
-global["world"] = [
-	[1,1,1,1,1],
-	[1,1,1,1,1],
-	[1,1,1,1,1],
-	[1,1,1,1,1],
-	[1,1,1,1,1]
-];
+var http = require('http');
+
+http.get(
+	"http://localhost:3000/world", function(response) {
+	    // Continuously update stream with data
+	    var body = '';
+	    response.on('data', function(d) {
+			console.log(d);
+	        body += d;
+	    });
+	    response.on('end', function() {
+
+	        // Data reception is done, do whatever with it!
+	        var parsed = JSON.parse(body);
+
+	        console.log(parsed);
+
+			global["world"] = parsed;
+	    });
+	}
+);
 
 global["users"] = [
 	{
