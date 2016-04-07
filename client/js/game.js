@@ -68,10 +68,10 @@ function Sprite(name, url, x, y) {
 			this.sprite.scale.x = Math.abs(this.sprite.scale.x);
 		} else if(ROTATIONS[this.rotation] == "left") {
 			this.sprite.angle = 0;
-			this.sprite.scale.x = Math.abs(this.sprite.scale.x);
+			this.sprite.scale.x = -Math.abs(this.sprite.scale.x);
 		} else if(ROTATIONS[this.rotation] == "right") {
 			this.sprite.angle = 0;
-			this.sprite.scale.x = -Math.abs(this.sprite.scale.x);
+			this.sprite.scale.x = Math.abs(this.sprite.scale.x);
 		}
 	}
 	this.getX = function() {
@@ -90,7 +90,7 @@ function Sprite(name, url, x, y) {
 	this.sprite.height = TILE_SIZE * GAME_SIZE;
 	this.sprite.anchor.setTo(0.5, 0.5);
 	this.moveTime = 0;
-	this.moveThreshold = 250;
+	this.moveThreshold = 150;
 	this.rotation = 0;
 }
 
@@ -108,6 +108,7 @@ function Tile(val, x, y, height, width, collideable) {
 }
 
 var level = [];
+//var sync = function();
 
 var tileset = [
 	{
@@ -131,6 +132,7 @@ function preload() {
 	game.load.image(tileset[i].name, tileset[i].url);
 	game.load.spritesheet("player", "./assets/player.png", 32, 48);
 	level = remote.getGlobal("world");
+	//sync = remote.getGlobal("sync");
 	console.log(level);
 }
 
@@ -151,6 +153,8 @@ function create() {
 
 	}
 	player = new Sprite("player", "./assets/player.png", 2, 2);
+
+	console.log(remote);
 }
 
 function update() {
