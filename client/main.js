@@ -1,9 +1,71 @@
 'use strict';
 
 var http = require('http');
+var request = require('request');
 
 http.get(
 	"http://localhost:3000/world", function(response) {
+	    // Continuously update stream with data
+	    var body = '';
+	    response.on('data', function(d) {
+			//console.log(d);
+	        body += d;
+	    });
+	    response.on('end', function() {
+
+	        // Data reception is done, do whatever with it!
+	        var parsed = JSON.parse(body);
+
+	        //console.log(parsed);
+
+			global["world"] = parsed;
+	    });
+	}
+).end();
+
+global["users"] = {};
+
+global["player"] = {
+	name: "john",
+	x: 5,
+	y: 5
+};
+
+
+
+/*
+var post_req = http.request(
+	{
+		host: 'localhost',
+		path: '/user',
+		//since we are listening on a custom port, we need to specify it by hand
+		port: '3000',
+		//This is what changes the request to a POST request
+		method: 'POST'
+	},
+	function(response) {
+	    // Continuously update stream with data
+	    var body = '';
+	    response.on('data', function(d) {
+			console.log(d);
+	        body += d;
+	    });
+	    response.on('end', function() {
+
+	        // Data reception is done, do whatever with it!
+			console.log(body);
+			console.log("PARSING");
+	        var parsed = JSON.parse(body);
+
+	        console.log(parsed);
+
+	    });
+	}
+);
+*/
+/*
+http.get(
+	"http://localhost:3000/user/"+JSON.stringify(user), function(response) {
 	    // Continuously update stream with data
 	    var body = '';
 	    response.on('data', function(d) {
@@ -17,28 +79,17 @@ http.get(
 
 	        console.log(parsed);
 
-			global["world"] = parsed;
+			//global["world"] = parsed;
 	    });
 	}
-);
+).end();
+*/
 
-global["users"] = [
-	{
-		name: "john",
-		x: 1,
-		y: 1
-	},
-	{
-		name: "timmy",
-		x: 2,
-		y: 2
-	},
-	{
-		name: "toni",
-		x: 3,
-		y: 3
-	}
-];
+//console.log(JSON.stringify(user))
+
+//post_req.write(JSON.stringify(user));
+//post_req.end();
+
 
 const electron = require('electron');
 // Module to control application life.
@@ -97,5 +148,18 @@ app.on('activate', function () {
 });
 
 function positionSync() {
-	console.log("positionSync()");
+	request.post(
+	    'http://localhost:3000/user',
+	    {
+			form:
+				{
+					name: JSON.stringify(player)
+				}
+		},
+	    function (error, response, body) {
+	        if (!error && response.statusCode == 200) {
+	            console.log(JSON.parse(response.body));
+	        }
+	    }
+	);
 }

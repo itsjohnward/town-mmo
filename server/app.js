@@ -1,5 +1,8 @@
 var express = require('express');
 var app = express();
+var bodyParser = require('body-parser');
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 var param;
 
@@ -24,7 +27,7 @@ app.get('/js/game.js', function (req, res) {
 });
 */
 
-var users = []
+var users = {};
 
 var world = [
 	[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -57,9 +60,13 @@ app.get('/user', function (req, res) {
 });
 
 app.post('/user', function (req, res) {
-	console.log(req.route.stack);
-	res.send('Got a POST request at /user');
 	console.log('Got a POST request at /user');
+	console.log(req.body.name);
+
+	console.log(JSON.parse(req.body.name).name);
+	users[""+JSON.parse(req.body.name).name+""] = JSON.parse(req.body.name);
+	console.log(users);
+	res.send(users);
 });
 
 /*

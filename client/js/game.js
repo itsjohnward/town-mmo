@@ -1,7 +1,9 @@
 const remote = require('electron').remote;
 const app = remote.app;
 
-console.log(remote.getGlobal("john"));
+var users = remote.getGlobal("users");
+var player = remote.getGlobal("player");
+
 
 console.log("game.js is running.");
 
