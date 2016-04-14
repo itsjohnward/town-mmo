@@ -28,7 +28,8 @@ global["users"] = {};
 global["player"] = {
 	name: "john",
 	x: 5,
-	y: 5
+	y: 5,
+	rotation: "up"
 };
 
 
