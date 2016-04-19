@@ -12,46 +12,10 @@ global["player"] = {
 	y: 5,
 	rotation: "up"
 };
-
-http.get(
-	"http://localhost:3000/world", function(response) {
-	    // Continuously update stream with data
-	    var body = '';
-	    response.on('data', function(d) {
-			//console.log(d);
-	        body += d;
-	    });
-	    response.on('end', function() {
-
-	        // Data reception is done, do whatever with it!
-	        var parsed = JSON.parse(body);
-
-	        //console.log(parsed);
-
-			global["world"] = parsed;
-	    });
-	}
-).end();
-
-http.get(
-	"http://localhost:3000/users", function(response) {
-	    // Continuously update stream with data
-	    var body = '';
-	    response.on('data', function(d) {
-			//console.log(d);
-	        body += d;
-	    });
-	    response.on('end', function() {
-
-	        // Data reception is done, do whatever with it!
-	        var parsed = JSON.parse(body);
-
-	        //console.log(parsed);
-
-			global["users"] = parsed;
-	    });
-	}
-).end();
+var server = global["server"] = {
+	url: ""
+};
+global["synced"] = false;
 
 //prompt.start();
 //prompt.get(['username'/*, 'email'*/], function (err, result) {
@@ -173,7 +137,13 @@ app.on('ready', function() {
 });
 
 setInterval(function(){
-	positionSync();
+	console.log(server.url);
+	console.log(global["player"].name);
+	if(server.url != "") {
+		console.log(server.url);
+		positionSync();
+		worldSync();
+	}
 }, 500);
 
 // Quit when all windows are closed.
@@ -194,19 +164,65 @@ app.on('activate', function () {
 });
 
 function positionSync() {
-	request.post(
-	    'http://localhost:3000/user',
-	    {
-			form:
-				{
-					name: JSON.stringify(player)
-				}
-		},
-	    function (error, response, body) {
-	        if (!error && response.statusCode == 200) {
-	            global["users"] = JSON.parse(response.body);
-				console.log(users);
-	        }
-	    }
-	);
+	if (global["player"].name == "") {
+		http.get(
+			server.url+"/world", function(response) {
+			    // Continuously update stream with data
+			    var body = '';
+			    response.on('data', function(d) {
+					//console.log(d);
+			        body += d;
+			    });
+			    response.on('end', function() {
+
+			        // Data reception is done, do whatever with it!
+			        var parsed = JSON.parse(body);
+
+			        //console.log(parsed);
+
+					global["world"] = parsed;
+			    });
+			}
+		).end();
+	}
+	else {
+		request.post(
+		    server.url+'/user',
+		    {
+				form:
+					{
+						name: JSON.stringify(player)
+					}
+			},
+		    function (error, response, body) {
+		        if (!error && response.statusCode == 200) {
+		            global["users"] = JSON.parse(response.body);
+					console.log(users);
+		        }
+		    }
+		);
+	}
+}
+
+function worldSync() {
+	http.get(
+		server.url+"/world", function(response) {
+		    // Continuously update stream with data
+		    var body = '';
+		    response.on('data', function(d) {
+				//console.log(d);
+		        body += d;
+		    });
+		    response.on('end', function() {
+
+		        // Data reception is done, do whatever with it!
+		        var parsed = JSON.parse(body);
+
+		        //console.log(parsed);
+
+				global["world"] = parsed;
+				global["synced"] = true;
+		    });
+		}
+	).end();
 }

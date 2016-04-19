@@ -5,6 +5,7 @@ var users = remote.getGlobal("users");
 var user_sprites = {}
 var player = remote.getGlobal("player");
 var level = remote.getGlobal("world");
+var synced = remote.getGlobal("synced");
 
 
 var word = "phaser";
@@ -269,9 +270,23 @@ function preload() {
 }
 
 function create() {
+
 	cursors = game.input.keyboard.createCursorKeys();
-	buildWorld();
-	player_sprite = new Sprite(player.name, "./assets/player.png", 2, 2);
+
+	console.log("test");
+
+	while(true) {
+		synced = remote.getGlobal("synced");
+		console.log(synced);
+		if (synced) {
+			level = remote.getGlobal("world");
+			buildWorld()
+			player_sprite = new Sprite(player.name, "./assets/player.png", 2, 2);
+			playerSync();
+			break;
+		}
+	}
+
 	//chat = new Chat();
 	//loadBitmapData();
 	//game.camera.follow(player_sprite);
