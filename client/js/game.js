@@ -97,10 +97,10 @@ function Sprite(name, url, x, y) {
 		}
 	}
 	this.getX = function() {
-		return this.x * ZOOM_FACTOR * TILE_SIZE + TILE_SIZE/2;
+		return this.x * ZOOM_FACTOR * TILE_SIZE + (TILE_SIZE*ZOOM_FACTOR)/2;
 	}
 	this.getY = function() {
-		return this.y * ZOOM_FACTOR * TILE_SIZE + TILE_SIZE/2;
+		return this.y * ZOOM_FACTOR * TILE_SIZE + (TILE_SIZE*ZOOM_FACTOR)/2;
 	}
 	this.setX = function(x) {
 		this.x = x; // ADD LERP
