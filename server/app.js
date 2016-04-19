@@ -54,9 +54,10 @@ app.get('/world', function (req, res) {
 	console.log('Sent world');
 });
 
-app.get('/user', function (req, res) {
-	res.send('Got a GET request at /user');
+app.get('/users', function (req, res) {
+	//res.send('Got a GET request at /user');
 	console.log('Got a GET request at /user');
+	res.send(users);
 });
 
 app.post('/user', function (req, res) {

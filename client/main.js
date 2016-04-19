@@ -2,6 +2,16 @@
 
 var http = require('http');
 var request = require('request');
+var prompt = require('prompt');
+
+global["world"] = {};
+global["users"] = {};
+global["player"] = {
+	name: "Anonymous",
+	x: 5,
+	y: 5,
+	rotation: "up"
+};
 
 http.get(
 	"http://localhost:3000/world", function(response) {
@@ -23,14 +33,40 @@ http.get(
 	}
 ).end();
 
-global["users"] = {};
+http.get(
+	"http://localhost:3000/users", function(response) {
+	    // Continuously update stream with data
+	    var body = '';
+	    response.on('data', function(d) {
+			//console.log(d);
+	        body += d;
+	    });
+	    response.on('end', function() {
 
-global["player"] = {
-	name: "john",
-	x: 5,
-	y: 5,
-	rotation: "up"
-};
+	        // Data reception is done, do whatever with it!
+	        var parsed = JSON.parse(body);
+
+	        //console.log(parsed);
+
+			global["users"] = parsed;
+	    });
+	}
+).end();
+
+//prompt.start();
+//prompt.get(['username'/*, 'email'*/], function (err, result) {
+	//
+	// Log the results.
+	//
+	//console.log('Command-line input received:');
+	//console.log('  username: ' + result.username);
+	//console.log('  email: ' + result.email);
+//	global["player"].name = result.username;
+//});
+
+//global["users"] = {};
+
+
 
 
 
@@ -91,6 +127,13 @@ http.get(
 //post_req.write(JSON.stringify(user));
 //post_req.end();
 
+if(process.argv.length < 3) {
+	console.log("ERROR: Please provide a username. For example: \"npm start john\" for the username \"john.\"");
+	exit(1);
+}
+else {
+	global["player"].name = process.argv[2];
+}
 
 const electron = require('electron');
 // Module to control application life.
