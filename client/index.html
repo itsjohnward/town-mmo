@@ -1,10 +1,20 @@
 <html>
 	<head>
 		<title>Town: The MMO</title>
-		<script type="text/javascript" src="./js/phaser.js"></script>
 		<link rel="stylesheet" type="text/css" href="./styles/style.css" />
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+		<script>
+			function processInput(form) {
+				var TestVar = document.getElementsByName('inputbox')[0].value
+				const remote = require('electron').remote;
+				var player = remote.getGlobal("player");
+				player.name = TestVar;
+				window.location.href = "game.html";
+			}
+		</script>
 	</head>
 	<body>
-		<script type="text/javascript" src="./js/game.js"></script>
+		<input type="text" name="inputbox"></input>
+		<button onclick="processInput()"></button>
 	</body>
 </html>

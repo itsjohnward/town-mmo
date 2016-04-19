@@ -4,16 +4,34 @@ const app = remote.app;
 var users = remote.getGlobal("users");
 var user_sprites = {}
 var player = remote.getGlobal("player");
+var level = remote.getGlobal("world");
+
+
+var word = "phaser";
+var correct = [];
+var bmd;
+var chat;
 
 
 console.log("game.js is running.");
 
-var GAME_SIZE = 2;
+var ASPECT_RATIO = 16/9;
+var GAME_ASPECT_RATIO = 13.5/9;
+var CHAT_ASPECT_RATIO = ASPECT_RATIO - GAME_ASPECT_RATIO; // 2.5/9
+
 var TILE_SIZE = 16;
+var ZOOM_FACTOR = 5;
+//console.log($(window).width());
+
+var WINDOW_WIDTH = $(window).width();
+var WINDOW_HEIGHT = WINDOW_WIDTH / ASPECT_RATIO;
+var GAME_WIDTH = WINDOW_WIDTH / ASPECT_RATIO * GAME_ASPECT_RATIO;
+var CHAT_WIDTH = WINDOW_WIDTH - GAME_WIDTH;
+
 var ROTATIONS = ["left", "right", "up", "down"];
 var player_sprite;
 
-var game = new Phaser.Game(GAME_SIZE*16*16, GAME_SIZE*16*16, Phaser.AUTO, 'content', {
+var game = new Phaser.Game(WINDOW_WIDTH, WINDOW_HEIGHT, Phaser.AUTO, 'content', {
   preload: preload,
   create: create,
   update: update,
@@ -21,7 +39,7 @@ var game = new Phaser.Game(GAME_SIZE*16*16, GAME_SIZE*16*16, Phaser.AUTO, 'conte
 });
 
 function coord_to_pixels(c) {
-	return c * GAME_SIZE * TILE_SIZE + TILE_SIZE/2;
+	return c * ZOOM_FACTOR * TILE_SIZE + (ZOOM_FACTOR*TILE_SIZE)/2;
 }
 
 function Sprite(name, url, x, y) {
@@ -78,10 +96,10 @@ function Sprite(name, url, x, y) {
 		}
 	}
 	this.getX = function() {
-		return this.x * GAME_SIZE * TILE_SIZE + TILE_SIZE/2;
+		return this.x * ZOOM_FACTOR * TILE_SIZE + TILE_SIZE/2;
 	}
 	this.getY = function() {
-		return this.y * GAME_SIZE * TILE_SIZE + TILE_SIZE/2;
+		return this.y * ZOOM_FACTOR * TILE_SIZE + TILE_SIZE/2;
 	}
 	this.setX = function(x) {
 		this.x = x; // ADD LERP
@@ -110,29 +128,34 @@ function Sprite(name, url, x, y) {
 	this.x = x;
 	this.y = y;
 	this.sprite = game.add.sprite(this.getX(), this.getY(), this.name);
-	this.sprite.width = TILE_SIZE * GAME_SIZE;
-	this.sprite.height = TILE_SIZE * GAME_SIZE;
+	this.sprite.width = TILE_SIZE * ZOOM_FACTOR;
+	this.sprite.height = TILE_SIZE * ZOOM_FACTOR;
 	this.sprite.anchor.setTo(0.5, 0.5);
 	this.moveTime = 0;
 	this.moveThreshold = 150;
 	this.rotation = 0;
 }
 
-function Tile(val, x, y, height, width, collideable) {
+function Tile(val, x, y) {
   this.url = tileset[val].url;
   this.x = x;
   this.y = y;
-  this.height = height;
-  this.width = width;
   this.collideable = tileset[val].collideable;
   var sprite = game.add.sprite(coord_to_pixels(x), coord_to_pixels(y), tileset[val].name);
   sprite.anchor.setTo(0.5, 0.5);
-  sprite.width = GAME_SIZE * TILE_SIZE;
-  sprite.height = GAME_SIZE * TILE_SIZE;
+  sprite.width = ZOOM_FACTOR * TILE_SIZE;
+  sprite.height = ZOOM_FACTOR * TILE_SIZE;
 }
 
-var level = [];
-//var sync = function();
+function World() {
+
+}
+
+function Chat() {
+	this.width = CHAT_WIDTH;
+	this.height = WINDOW_HEIGHT;
+	var background = new Phaser.Rectangle(GAME_WIDTH, 0, CHAT_WIDTH, WINDOW_HEIGHT);
+}
 
 var tileset = [
 	{
@@ -149,19 +172,16 @@ var tileset = [
 
 var tiles = []
 
-function preload() {
+function loadImages() {
 	for (i in tileset) {
 		game.load.image(tileset[i].name, tileset[i].url);
 	}
 	game.load.image(tileset[i].name, tileset[i].url);
 	game.load.spritesheet(player.name, "./assets/player.png", 32, 48);
-	level = remote.getGlobal("world");
-	//sync = remote.getGlobal("sync");
-	console.log(level);
 }
 
-function create() {
-	cursors = game.input.keyboard.createCursorKeys();
+function buildWorld() {
+	//game.world.setBounds(0, 0, 1280, 600);
 	var x, y;
 	y = 0;
 	for(i in level) {
@@ -176,12 +196,33 @@ function create() {
 		y++;
 
 	}
-	player_sprite = new Sprite(player.name, "./assets/player.png", 2, 2);
-
-	console.log(remote);
 }
 
-function update() {
+function keyPress(char) {
+    //  Clear the BMD
+    bmd.cls();
+    //  Set the x value we'll start drawing the text from
+    var x = 64;
+	//  Now draw the word, letter by letter, changing colour as required
+	bmd.context.fillStyle = '#00ff00';
+	bmd.context.fillText(char, x, 64);
+	console.log(char);
+	x += bmd.context.measureText(char).width;
+}
+
+function loadBitmapData() {
+	//  This is our BitmapData onto which we'll draw the word being entered
+    bmd = game.make.bitmapData(800, 200);
+    bmd.context.font = '64px Arial';
+    bmd.context.fillStyle = '#ffffff';
+    bmd.context.fillText(word, 64, 64);
+    bmd.addToWorld();
+
+    //  Capture all key presses
+    game.input.keyboard.addCallbacks(this, null, null, keyPress);
+}
+
+function controls() {
 	if (game.input.keyboard.isDown(Phaser.Keyboard.W)) {
 		player_sprite.move("up");
 	}
@@ -194,39 +235,56 @@ function update() {
 	else if (game.input.keyboard.isDown(Phaser.Keyboard.D)) {
 		player_sprite.move("right");
 	}
-	player.x = player_sprite.x;
-	player.y = player_sprite.y;
-
 }
 
-function render() {
-	users = remote.getGlobal("users");
-	//console.log(users);
+function playerSync() {
+	player.x = player_sprite.x;
+	player.y = player_sprite.y;
+}
+
+function renderConnectedUsers() {
+	var users = remote.getGlobal("users");
 	for (i in users) {
+		console.log(users[i]);
 		if(users[i].name != player_sprite.name) {
 			if(user_sprites[users[i].name] == undefined) {
 				console.log("Creating: \n" +
 					"\tuser_sprites[" + users[i].name + "] = new Sprite(\"player_sprite\", \"./assets/player_sprite.png\", " + users[i].x + ", " + users[i].y + ");");
 				user_sprites[users[i].name] = new Sprite(player.name, "./assets/player.png", users[i].x, users[i].y);
 			} else {
-				//console.log("Updating:\n" +
-				//	"\tuser_sprites[" + users[i].name + "].setX(" + users[i].x + ");" + "\n" +
-				//	"\tuser_sprites[" + users[i].name + "].setY(" + users[i].y + ");");
-
+				console.log("Updating: \n" +
+					"\tuser_sprites[" + users[i].name + "].setX(" + users[i].x + ");\n" +
+					"\tuser_sprites[" + users[i].name + "].setY(" + users[i].y + ");\n"
+				);
 				user_sprites[users[i].name].setX(users[i].x);
-				//console.log("users[" + i + "].x = " + users[i].x);
 				user_sprites[users[i].name].setY(users[i].y);
-				//user_sprites[users[i].name].setRotation(users[i].rotation);
 				user_sprites[users[i].name].updateLocation();
-				/*
-				if(user_sprites[users[i].name].getX() != users[i].x) {
-					console.log("X ERROR");
-				}
-				if(user_sprites[users[i].name].getY() != users[i].y) {
-					console.log("Y ERROR");
-				}
-				*/
 			}
 		}
 	}
+}
+
+function preload() {
+	loadImages();
+}
+
+function create() {
+	cursors = game.input.keyboard.createCursorKeys();
+	buildWorld();
+	player_sprite = new Sprite(player.name, "./assets/player.png", 2, 2);
+	//chat = new Chat();
+	//loadBitmapData();
+	//game.camera.follow(player_sprite);
+	//console.log(remote);
+
+}
+
+function update() {
+	controls();
+	playerSync();
+}
+
+function render() {
+	renderConnectedUsers();
+	//game.debug.geom(chat.background);
 }

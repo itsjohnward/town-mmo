@@ -7,7 +7,7 @@ var prompt = require('prompt');
 global["world"] = {};
 global["users"] = {};
 global["player"] = {
-	name: "Anonymous",
+	name: "",
 	x: 5,
 	y: 5,
 	rotation: "up"
@@ -127,6 +127,7 @@ http.get(
 //post_req.write(JSON.stringify(user));
 //post_req.end();
 
+/*
 if(process.argv.length < 3) {
 	console.log("ERROR: Please provide a username. For example: \"npm start john\" for the username \"john.\"");
 	exit(1);
@@ -134,6 +135,7 @@ if(process.argv.length < 3) {
 else {
 	global["player"].name = process.argv[2];
 }
+*/
 
 const electron = require('electron');
 // Module to control application life.
@@ -147,13 +149,13 @@ let mainWindow;
 
 function createWindow () {
 	// Create the browser window.
-	mainWindow = new BrowserWindow({width: 800, height: 600});
+	mainWindow = new BrowserWindow({width: 1422, height: 800});
 
 	// and load the index.html of the app.
 	mainWindow.loadURL('file://' + __dirname + '/index.html');
 
 	// Open the DevTools.
-	mainWindow.webContents.openDevTools();
+	//mainWindow.webContents.openDevTools();
 
 	// Emitted when the window is closed.
 	mainWindow.on('closed', function() {

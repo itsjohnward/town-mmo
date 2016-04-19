@@ -65,7 +65,9 @@ app.post('/user', function (req, res) {
 	console.log(req.body.name);
 
 	console.log(JSON.parse(req.body.name).name);
-	users[""+JSON.parse(req.body.name).name+""] = JSON.parse(req.body.name);
+	if (JSON.parse(req.body.name).name != "") {
+		users[""+JSON.parse(req.body.name).name+""] = JSON.parse(req.body.name);
+	}
 	console.log(users);
 	res.send(users);
 });
