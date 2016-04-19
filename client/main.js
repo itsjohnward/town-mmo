@@ -129,7 +129,7 @@ app.on('ready', function() {
 
 setInterval(function(){
 	positionSync();
-}, 5000);
+}, 500);
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function () {
@@ -159,7 +159,8 @@ function positionSync() {
 		},
 	    function (error, response, body) {
 	        if (!error && response.statusCode == 200) {
-	            console.log(JSON.parse(response.body));
+	            global["users"] = JSON.parse(response.body);
+				console.log(users);
 	        }
 	    }
 	);
