@@ -82,8 +82,10 @@ $('form').submit(function(){
 });
 server.socket.on('joined', function(user) {
 	$('#messages').append($('<li>').text(user + " just joined the chat."));
-	users[user.name] = user;
-	console.log(user.name + " just joined the chat");
+	httpGetAsync(server.ip + '/user/' + user, function(data) {
+		users[user] = data;
+	});
+	console.log(user + " just joined the chat");
 })
 server.socket.on('left', function(user) {
 	$('#messages').append($('<li>').text(user + " just left the chat."));
@@ -93,7 +95,7 @@ server.socket.on('left', function(user) {
 server.socket.on('message', function(msg){
 	$('#messages').append($('<li>').text(msg));
 });
-server.socket.on('move', function(move) {
+server.socket.on('user_move', function(move) {
 	users[move.user].x = move.x;
 	users[move.user].y = move.y;
 	users[move.user].rotation = move.rotation;
@@ -306,42 +308,42 @@ function controls() {
 	if (game.input.keyboard.isDown(Phaser.Keyboard.W)) {
 		player_sprite.move("up");
 		var pos = {
-			user: player_sprite.name,
+			user: player,
 			x: player_sprite.x,
 			y: player_sprite.y,
 			rotation: player_sprite.rotation
 		}
-		server.socket.emit('move', pos);
+		server.socket.emit('user_move', pos);
 	}
 	else if (game.input.keyboard.isDown(Phaser.Keyboard.A)) {
 		player_sprite.move("left");
 		var pos = {
-			user: player_sprite.name,
+			user: player,
 			x: player_sprite.x,
 			y: player_sprite.y,
 			rotation: player_sprite.rotation
 		}
-		server.socket.emit('move', pos);
+		server.socket.emit('user_move', pos);
 	}
 	else if (game.input.keyboard.isDown(Phaser.Keyboard.S)) {
 		player_sprite.move("down");
 		var pos = {
-			user: player_sprite.name,
+			user: player,
 			x: player_sprite.x,
 			y: player_sprite.y,
 			rotation: player_sprite.rotation
 		}
-		server.socket.emit('move', pos);
+		server.socket.emit('user_move', pos);
 	}
 	else if (game.input.keyboard.isDown(Phaser.Keyboard.D)) {
 		player_sprite.move("right");
 		var pos = {
-			user: player_sprite.name,
+			user: player,
 			x: player_sprite.x,
 			y: player_sprite.y,
 			rotation: player_sprite.rotation
 		}
-		server.socket.emit('move', pos);
+		server.socket.emit('user_move', pos);
 	}
 }
 
@@ -357,8 +359,8 @@ function renderConnectedUsers(data) {
 	if(data != undefined) {
 		users = data;
 	}
-	if(player_sprite == undefined) {
-		player_sprite = new Sprite(users[player].model.name, data[player].model.url, 2, 2);
+	if(player_sprite == undefined && users[player] != undefined) {
+		player_sprite = new Sprite(users[player].model.name, users[player].model.url, 2, 2);
 	}
 	for (i in users) {
 		//console.log(users[i]);

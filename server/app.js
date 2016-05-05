@@ -17,6 +17,8 @@ var CHARACTER_MODELS = [
 	}
 ];
 
+var ROTATIONS = ["left", "right", "up", "down"];
+
 var users = {};
 var messages = [];
 var world = {};
@@ -75,8 +77,13 @@ app.get('/world', function (req, res) {
 
 app.get('/users', function (req, res) {
 	//res.send('Got a GET request at /user');
-	console.log('Got a GET request at /user');
+	console.log('Got a GET request at /users');
 	res.send(users);
+});
+
+app.get('/user/:username', function (req, res) {
+	console.log('Got a GET request at /user');
+	res.send(users[req.params.username]);
 });
 
 app.get('/', function(req, res){
@@ -97,7 +104,6 @@ app.get('/login', function(req, res) {
 	}
 	else {
 		if(users[req.query.username].password == req.query.password) {
-			users[req.query.username].connect();
 			res.send("yes");
 		}
 		else {
@@ -128,7 +134,8 @@ app.get('/assets/player2.png', function(req, res) {
 io.on('connection', function(socket){
 	var username = socket.handshake.query.username;
 	console.log("{connection} " + username);
-	io.emit('joined', users[username]);
+	users[username].connect();
+	io.emit('joined', username);
 	socket.on('disconnect', function(){
 		users[username].disconnect();
 		console.log("{disconnection} " + username);
@@ -141,9 +148,14 @@ io.on('connection', function(socket){
 		io.emit('message', fmsg);
 	});
 	socket.on('user_move', function(move) {
-		users[move.user].x = move.x;
-		users[move.user].y = move.y;
-		users[move.user].rotation = move.rotation;
+		//console.log(users);
+		//console.log(move);
+		if(users[move.user] != undefined) {
+			users[move.user].x = move.x;
+			users[move.user].y = move.y;
+			users[move.user].rotation = move.rotation;
+			console.log("{move} " + move.user + ": " + move.x + ", " + move.y + " (" + ROTATIONS[move.rotation] + ")")
+		}
 		io.emit('user_move', move);
 	});
 
