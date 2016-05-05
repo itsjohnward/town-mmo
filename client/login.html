@@ -1,0 +1,83 @@
+<html>
+	<head>
+		<title>Town: The MMO</title>
+		<link rel="stylesheet" type="text/css" href="./styles/login.css" />
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+		<script>
+			const remote = require('electron').remote;
+			var server = "";
+			function verify_server() {
+				server = document.getElementsByName('server')[0].value;
+				console.log("verify_server(" + server + ")");
+				$.get(
+				    server + "/ping",
+				    {},
+				    function(data) {
+						console.log("success");
+						document.getElementsByClassName('server_result')[0].style.display = "block";
+						document.getElementsByClassName('server_result')[0].innerHTML = server;
+						document.getElementsByClassName('server_result')[0].style.color = "green";
+						document.getElementsByName('server')[0].style.display = "none";
+						document.getElementsByName('server_button')[0].style.display = "none";
+						var gServer = remote.getGlobal("server");
+						gServer.ip = server;
+						console.log(remote.getGlobal("server"));
+				    }
+				).fail(function() {
+					console.log("failure");
+					document.getElementsByClassName('server_result')[0].style.display = "block";
+					document.getElementsByClassName('server_result')[0].innerHTML = "Server does not exist";
+					document.getElementsByClassName('server_result')[0].style.color = "red";
+				});
+			}
+			function verify_login() {
+				console.log("verify_login()");
+				var login = {
+					username: document.getElementsByName('username')[0].value,
+					password: document.getElementsByName('password')[0].value,
+					server: server
+				}
+				$.get(
+				    server + "/login",
+				    login,
+				    function(data) {
+				       if(data=="no") {
+						   console.log("Login failure");
+						   document.getElementsByClassName('login_result')[0].style.display = "block";
+					   }
+					   else {
+						   window.location.href = "game.html?server=" + server + "&username=" + login.username + "&password=" + login.password;
+					   }
+				    }
+				);
+			}
+			function processInput() {
+
+				const remote = require('electron').remote;
+				var player = remote.getGlobal("player");
+				var server = remote.getGlobal("server");
+				player.name = username;
+
+				window.location.href = "game.html";
+			}
+		</script>
+	</head>
+	<body>
+		<div class="login">
+			<div class="child">
+				<h1>Town: The MMO</h1>
+			</div>
+			<div class="child">
+				<h2>Server: <input type="url" name="server"></input></h2>
+				<div class="server_result" style="display:none">Server does not exist</div>
+				<button onclick="verify_server()" name="server_button">Verify</button>
+			</div>
+			<div class="child">
+				<input type="text" name="username" placeholder="Username"></input>
+				<input type="password" name="password" placeholder="Password"></input>
+				<div class="login_result" style="display:none">Incorrect username and/or password</div>
+				<button onclick="verify_login()">Login</button>
+			</div>
+		</div>
+	</body>
+</html>

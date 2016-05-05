@@ -1,38 +1,118 @@
+
 const remote = require('electron').remote;
 const app = remote.app;
 
-var users = remote.getGlobal("users");
+var users = {};
 var user_sprites = {}
-var player = remote.getGlobal("player");
-var level = remote.getGlobal("world");
-var synced = remote.getGlobal("synced");
+var player = "";
+var world = {};
+var synced = {};
+
+function httpGetAsync(theUrl, callback){
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() {
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            callback(JSON.parse(xmlHttp.responseText));
+    }
+    xmlHttp.open("GET", theUrl, true); // true for asynchronous
+    xmlHttp.send(null);
+}
+
+/*
+	-------------------
+	| START CHAT CODE |
+	-------------------
+*/
+
+function getTime() {
+	var now = new Date();
+	var hour = now.getHours();
+	var minute = now.getMinutes();
+	var second = now.getSeconds();
+	if(hour.toString().length == 1) {
+		var hour = '0'+hour;
+	}
+	if(minute.toString().length == 1) {
+		var minute = '0'+minute;
+	}
+	if(second.toString().length == 1) {
+		var second = '0'+second;
+	}
+	var time = hour+':'+minute+':'+second;
+	return time;
+}
+
+function getQueryVariable(variable){
+   var query = window.location.search.substring(1);
+   var vars = query.split("&");
+   for (var i=0;i<vars.length;i++) {
+		   var pair = vars[i].split("=");
+		   if(pair[0] == variable){return pair[1];}
+   }
+   return(false);
+}
+
+var server = {};
+server.ip = getQueryVariable("server");
+//console.log(server);
+//console.log(remote.getGlobal("server"));
+server.socket = io.connect(server.ip + "?username=" + getQueryVariable("username"));
+$('form').submit(function(){
+	var msg = {}
+	msg.timestamp = getTime();
+	msg.from = getQueryVariable("username");
+	msg.text = $('#m').val();
+	server.socket.emit('message', msg);
+	$('#m').val('');
+	return false;
+});
+server.socket.on('joined', function(user) {
+	$('#messages').append($('<li>').text(user + " just joined the chat."));
+	users[user.name] = user;
+	console.log(user.name + " just joined the chat");
+})
+server.socket.on('left', function(user) {
+	$('#messages').append($('<li>').text(user + " just left the chat."));
+	delete users[user];
+	console.log(user + " just left the chat");
+})
+server.socket.on('message', function(msg){
+	$('#messages').append($('<li>').text(msg));
+});
+server.socket.on('move', function(move) {
+	users[move.user].x = move.x;
+	users[move.user].y = move.y;
+	users[move.user].rotation = move.rotation;
+});
 
 
-var word = "phaser";
-var correct = [];
-var bmd;
-var chat;
+/*
+	-----------------
+	| END CHAT CODE |
+	-----------------
+*/
 
 
-console.log("game.js is running.");
+//const remote = require('electron').remote;
+//var server = remote.getGlobal("server");
 
-var ASPECT_RATIO = 16/9;
-var GAME_ASPECT_RATIO = 13.5/9;
-var CHAT_ASPECT_RATIO = ASPECT_RATIO - GAME_ASPECT_RATIO; // 2.5/9
+//var ASPECT_RATIO = 16/9;
+//var GAME_ASPECT_RATIO = 13.5/9;
+//var CHAT_ASPECT_RATIO = ASPECT_RATIO - GAME_ASPECT_RATIO; // 2.5/9
 
 var TILE_SIZE = 16;
 var ZOOM_FACTOR = 5;
 //console.log($(window).width());
 
 var WINDOW_WIDTH = $(window).width();
-var WINDOW_HEIGHT = WINDOW_WIDTH / ASPECT_RATIO;
-var GAME_WIDTH = WINDOW_WIDTH / ASPECT_RATIO * GAME_ASPECT_RATIO;
-var CHAT_WIDTH = WINDOW_WIDTH - GAME_WIDTH;
+var WINDOW_HEIGHT = $(window).height();
+var GAME_WIDTH = WINDOW_WIDTH * 0.8;
+var CHAT_WIDTH = WINDOW_WIDTH-GAME_WIDTH;
 
 var ROTATIONS = ["left", "right", "up", "down"];
 var player_sprite;
 
-var game = new Phaser.Game(WINDOW_WIDTH, WINDOW_HEIGHT, Phaser.AUTO, 'content', {
+var game = new Phaser.Game(GAME_WIDTH, WINDOW_HEIGHT, Phaser.AUTO, 'content', {
   preload: preload,
   create: create,
   update: update,
@@ -153,9 +233,15 @@ function World() {
 }
 
 function Chat() {
-	this.width = CHAT_WIDTH;
-	this.height = WINDOW_HEIGHT;
-	var background = new Phaser.Rectangle(GAME_WIDTH, 0, CHAT_WIDTH, WINDOW_HEIGHT);
+	var socket = io();
+	$('form').submit(function(){
+		socket.emit('chat message', $('#m').val());
+		$('#m').val('');
+		return false;
+	});
+	socket.on('chat message', function(msg){
+		$('#messages').append($('<li>').text(msg));
+	});
 }
 
 var tileset = [
@@ -178,19 +264,19 @@ function loadImages() {
 		game.load.image(tileset[i].name, tileset[i].url);
 	}
 	game.load.image(tileset[i].name, tileset[i].url);
-	game.load.spritesheet(player.name, "./assets/player.png", 32, 48);
 }
 
-function buildWorld() {
+function buildWorld(data) {
 	//game.world.setBounds(0, 0, 1280, 600);
+	world = data;
 	var x, y;
 	y = 0;
-	for(i in level) {
+	for(i in world) {
 		x = 0;
 		var temp = [];
-		for (j in level[i]) {
-			console.log(level[i][j]);
-			temp.push(new Tile(level[i][j], x, y));
+		for (j in world[i]) {
+			console.log(world[i][j]);
+			temp.push(new Tile(world[i][j], x, y));
 			x++;
 		}
 		tiles.push(temp);
@@ -199,59 +285,72 @@ function buildWorld() {
 	}
 }
 
-function keyPress(char) {
-    //  Clear the BMD
-    bmd.cls();
-    //  Set the x value we'll start drawing the text from
-    var x = 64;
-	//  Now draw the word, letter by letter, changing colour as required
-	bmd.context.fillStyle = '#00ff00';
-	bmd.context.fillText(char, x, 64);
-	console.log(char);
-	x += bmd.context.measureText(char).width;
-}
-
-function loadBitmapData() {
-	//  This is our BitmapData onto which we'll draw the word being entered
-    bmd = game.make.bitmapData(800, 200);
-    bmd.context.font = '64px Arial';
-    bmd.context.fillStyle = '#ffffff';
-    bmd.context.fillText(word, 64, 64);
-    bmd.addToWorld();
-
-    //  Capture all key presses
-    game.input.keyboard.addCallbacks(this, null, null, keyPress);
-}
-
 function controls() {
 	if (game.input.keyboard.isDown(Phaser.Keyboard.W)) {
 		player_sprite.move("up");
+		var pos = {
+			user: player_sprite.name,
+			x: player_sprite.x,
+			y: player_sprite.y,
+			rotation: player_sprite.rotation
+		}
+		server.socket.emit('move', pos);
 	}
 	else if (game.input.keyboard.isDown(Phaser.Keyboard.A)) {
 		player_sprite.move("left");
+		var pos = {
+			user: player_sprite.name,
+			x: player_sprite.x,
+			y: player_sprite.y,
+			rotation: player_sprite.rotation
+		}
+		server.socket.emit('move', pos);
 	}
 	else if (game.input.keyboard.isDown(Phaser.Keyboard.S)) {
 		player_sprite.move("down");
+		var pos = {
+			user: player_sprite.name,
+			x: player_sprite.x,
+			y: player_sprite.y,
+			rotation: player_sprite.rotation
+		}
+		server.socket.emit('move', pos);
 	}
 	else if (game.input.keyboard.isDown(Phaser.Keyboard.D)) {
 		player_sprite.move("right");
+		var pos = {
+			user: player_sprite.name,
+			x: player_sprite.x,
+			y: player_sprite.y,
+			rotation: player_sprite.rotation
+		}
+		server.socket.emit('move', pos);
 	}
 }
 
 function playerSync() {
-	player.x = player_sprite.x;
-	player.y = player_sprite.y;
+	if(users[player] != undefined) {
+		users[player].x = player_sprite.x;
+		users[player].y = player_sprite.y;
+	}
 }
 
-function renderConnectedUsers() {
-	var users = remote.getGlobal("users");
+function renderConnectedUsers(data) {
+	//var users = remote.getGlobal("users");
+	if(data != undefined) {
+		users = data;
+	}
+	if(player_sprite == undefined) {
+		game.load.spritesheet(users[player].model.name, users[player].model.url, 32, 48);
+		player_sprite = new Sprite(users[player].model.name, users[player].model.url, 2, 2);
+	}
 	for (i in users) {
-		console.log(users[i]);
+		//console.log(users[i]);
 		if(users[i].name != player_sprite.name) {
 			if(user_sprites[users[i].name] == undefined) {
 				console.log("Creating: \n" +
 					"\tuser_sprites[" + users[i].name + "] = new Sprite(\"player_sprite\", \"./assets/player_sprite.png\", " + users[i].x + ", " + users[i].y + ");");
-				user_sprites[users[i].name] = new Sprite(player.name, "./assets/player.png", users[i].x, users[i].y);
+				user_sprites[users[i].name] = new Sprite(users[i].model, "./assets/player.png", users[i].x, users[i].y);
 			} else {
 				console.log("Updating: \n" +
 					"\tuser_sprites[" + users[i].name + "].setX(" + users[i].x + ");\n" +
@@ -265,27 +364,56 @@ function renderConnectedUsers() {
 	}
 }
 
+
+var resizeGame = function () {
+	var height = window.innerHeight;
+	var width = window.innerWidth * 0.8;
+	game.width = width;
+	game.height = height;
+	game.stage.bounds.width = width;
+	game.stage.bounds.height = height;
+
+	if (game.renderType === 1) {
+		game.renderer.resize(width, height);
+		//Phaser.Canvas.setSmoothingEnabled(game.context, false);
+	}
+
+	game.camera.setSize(width, height);
+}
+
+
 function preload() {
+	player = getQueryVariable("username");
 	loadImages();
 }
 
 function create() {
 
+	httpGetAsync(server.ip + "/world", buildWorld);
+	httpGetAsync(server.ip + "/users", renderConnectedUsers);
+
 	cursors = game.input.keyboard.createCursorKeys();
 
 	console.log("test");
 
+	//world = remote.getGlobal("world");
+	//buildWorld();
+
+	//playerSync();
+
+	/*
 	while(true) {
 		synced = remote.getGlobal("synced");
 		console.log(synced);
 		if (synced) {
-			level = remote.getGlobal("world");
+			world = remote.getGlobal("world");
 			buildWorld()
 			player_sprite = new Sprite(player.name, "./assets/player.png", 2, 2);
 			playerSync();
 			break;
 		}
 	}
+	*/
 
 	//chat = new Chat();
 	//loadBitmapData();
@@ -296,10 +424,11 @@ function create() {
 
 function update() {
 	controls();
-	playerSync();
+	//playerSync();
 }
 
 function render() {
+	playerSync();
 	renderConnectedUsers();
 	//game.debug.geom(chat.background);
 }

@@ -10,11 +10,10 @@ global["player"] = {
 	name: "",
 	x: 5,
 	y: 5,
-	rotation: "up"
+	rotation: "up",
+	messages: []
 };
-var server = global["server"] = {
-	url: ""
-};
+var server = global["server"] = {};
 global["synced"] = false;
 
 //prompt.start();
@@ -101,6 +100,7 @@ else {
 }
 */
 
+
 const electron = require('electron');
 // Module to control application life.
 const app = electron.app;
@@ -116,7 +116,7 @@ function createWindow () {
 	mainWindow = new BrowserWindow({width: 1422, height: 800});
 
 	// and load the index.html of the app.
-	mainWindow.loadURL('file://' + __dirname + '/index.html');
+	mainWindow.loadURL('file://' + __dirname + '/login.html');
 
 	// Open the DevTools.
 	//mainWindow.webContents.openDevTools();
@@ -136,6 +136,7 @@ app.on('ready', function() {
 	createWindow();
 });
 
+/*
 setInterval(function(){
 	console.log(server.url);
 	console.log(global["player"].name);
@@ -145,6 +146,7 @@ setInterval(function(){
 		worldSync();
 	}
 }, 500);
+*/
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function () {
@@ -163,6 +165,8 @@ app.on('activate', function () {
 	}
 });
 
+
+/*
 function positionSync() {
 	if (global["player"].name == "") {
 		http.get(
@@ -226,3 +230,4 @@ function worldSync() {
 		}
 	).end();
 }
+*/
