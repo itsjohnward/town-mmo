@@ -358,14 +358,14 @@ function renderConnectedUsers(data) {
 		users = data;
 	}
 	if(player_sprite == undefined) {
-		player_sprite = new Sprite(data[player].model.name, data[player].model.url, 2, 2);
+		player_sprite = new Sprite(users[player].model.name, data[player].model.url, 2, 2);
 	}
 	for (i in users) {
 		//console.log(users[i]);
-		if(users[i].username != player_sprite.name) {
+		if(users[i].username != player) {
 			if(user_sprites[users[i].username] == undefined) {
 				console.log("Creating: \n" +
-					"\tuser_sprites[" + users[i].username + "] = new Sprite(\"player_sprite\", \"./assets/player_sprite.png\", " + users[i].x + ", " + users[i].y + ");");
+					"\tuser_sprites[" + users[i].username + "] = new Sprite(" + users[i].model.name + ", " + users[i].model.url + ", " + users[i].x + ", " + users[i].y + ");");
 				user_sprites[users[i].username] = new Sprite(users[i].model.name, users[i].model.url, users[i].x, users[i].y);
 			} else {
 				console.log("Updating: \n" +
