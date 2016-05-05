@@ -7,6 +7,20 @@ var user_sprites = {}
 var player = "";
 var world = {};
 var synced = {};
+var CHARACTER_MODELS = [
+	//"assets/white-character.png",
+	//"assets/red-character.png",
+	//"assets/blue-character.png",
+	//"assets/green-character.png",
+	//"assets/yellow-character.png",
+	//"assets/black-character.png",
+	//"assets/purple-character.png",
+	//"assets/orange-character.png",
+	{
+		name: "player",
+		url: "./assets/player.png"
+	}
+];
 
 function httpGetAsync(theUrl, callback){
     var xmlHttp = new XMLHttpRequest();
@@ -264,6 +278,9 @@ function loadImages() {
 		game.load.image(tileset[i].name, tileset[i].url);
 	}
 	game.load.image(tileset[i].name, tileset[i].url);
+	for(i in CHARACTER_MODELS) {
+		game.load.spritesheet(CHARACTER_MODELS[i].name, CHARACTER_MODELS[i].url, 32, 48);
+	}
 }
 
 function buildWorld(data) {
@@ -341,24 +358,23 @@ function renderConnectedUsers(data) {
 		users = data;
 	}
 	if(player_sprite == undefined) {
-		game.load.spritesheet(users[player].model.name, users[player].model.url, 32, 48);
-		player_sprite = new Sprite(users[player].model.name, users[player].model.url, 2, 2);
+		player_sprite = new Sprite(data[player].model.name, data[player].model.url, 2, 2);
 	}
 	for (i in users) {
 		//console.log(users[i]);
-		if(users[i].name != player_sprite.name) {
-			if(user_sprites[users[i].name] == undefined) {
+		if(users[i].username != player_sprite.name) {
+			if(user_sprites[users[i].username] == undefined) {
 				console.log("Creating: \n" +
-					"\tuser_sprites[" + users[i].name + "] = new Sprite(\"player_sprite\", \"./assets/player_sprite.png\", " + users[i].x + ", " + users[i].y + ");");
-				user_sprites[users[i].name] = new Sprite(users[i].model, "./assets/player.png", users[i].x, users[i].y);
+					"\tuser_sprites[" + users[i].username + "] = new Sprite(\"player_sprite\", \"./assets/player_sprite.png\", " + users[i].x + ", " + users[i].y + ");");
+				user_sprites[users[i].username] = new Sprite(users[i].model.name, users[i].model.url, users[i].x, users[i].y);
 			} else {
 				console.log("Updating: \n" +
-					"\tuser_sprites[" + users[i].name + "].setX(" + users[i].x + ");\n" +
-					"\tuser_sprites[" + users[i].name + "].setY(" + users[i].y + ");\n"
+					"\tuser_sprites[" + users[i].username + "].setX(" + users[i].x + ");\n" +
+					"\tuser_sprites[" + users[i].username + "].setY(" + users[i].y + ");\n"
 				);
-				user_sprites[users[i].name].setX(users[i].x);
-				user_sprites[users[i].name].setY(users[i].y);
-				user_sprites[users[i].name].updateLocation();
+				user_sprites[users[i].username].setX(users[i].x);
+				user_sprites[users[i].username].setY(users[i].y);
+				user_sprites[users[i].username].updateLocation();
 			}
 		}
 	}
