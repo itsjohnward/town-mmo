@@ -21,10 +21,9 @@ var ROTATIONS = ["left", "right", "up", "down"];
 
 var users = {};
 var messages = [];
-var world = {};
 var server = {};
 
-function user(_username, _password, _ip) {
+var user = function(_username, _password, _ip) {
 	this.username = _username;
 	this.password = _password;
 	this.ip = _ip;
@@ -47,8 +46,6 @@ function user(_username, _password, _ip) {
 		connected = false;
 	}
 }
-
-var users = {};
 
 var world = [
 	[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],

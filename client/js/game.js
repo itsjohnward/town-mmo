@@ -7,6 +7,7 @@ var user_sprites = {}
 var player = "";
 var world = {};
 var synced = {};
+
 var CHARACTER_MODELS = [
 	//"assets/white-character.png",
 	//"assets/red-character.png",
@@ -96,9 +97,11 @@ server.socket.on('message', function(msg){
 	$('#messages').append($('<li>').text(msg));
 });
 server.socket.on('user_move', function(move) {
-	users[move.user].x = move.x;
-	users[move.user].y = move.y;
-	users[move.user].rotation = move.rotation;
+	if(users[move.user] != undefined) {
+		users[move.user].x = move.x;
+		users[move.user].y = move.y;
+		users[move.user].rotation = move.rotation;
+	}
 });
 
 
@@ -287,6 +290,8 @@ function loadImages() {
 
 function buildWorld(data) {
 	//game.world.setBounds(0, 0, 1280, 600);
+	console.log("Received world:");
+	console.log(data);
 	world = data;
 	var x, y;
 	y = 0;
@@ -305,50 +310,57 @@ function buildWorld(data) {
 }
 
 function controls() {
-	if (game.input.keyboard.isDown(Phaser.Keyboard.W)) {
-		player_sprite.move("up");
-		var pos = {
-			user: player,
-			x: player_sprite.x,
-			y: player_sprite.y,
-			rotation: player_sprite.rotation
+	if (!$("#m").is(':focus')) {
+		if (game.input.keyboard.isDown(Phaser.Keyboard.W)) {
+			player_sprite.move("up");
+			var pos = {
+				user: player,
+				x: player_sprite.x,
+				y: player_sprite.y,
+				rotation: player_sprite.rotation
+			}
+			server.socket.emit('user_move', pos);
+			//console.log("game.game.camera.focusOnXY("+player_sprite.sprite.x+", "+player_sprite.sprite.y+");");
+			game.camera.y = player_sprite.sprite.y;
 		}
-		server.socket.emit('user_move', pos);
-	}
-	else if (game.input.keyboard.isDown(Phaser.Keyboard.A)) {
-		player_sprite.move("left");
-		var pos = {
-			user: player,
-			x: player_sprite.x,
-			y: player_sprite.y,
-			rotation: player_sprite.rotation
+		else if (game.input.keyboard.isDown(Phaser.Keyboard.A)) {
+			player_sprite.move("left");
+			var pos = {
+				user: player,
+				x: player_sprite.x,
+				y: player_sprite.y,
+				rotation: player_sprite.rotation
+			}
+			server.socket.emit('user_move', pos);
+			game.camera.x = player_sprite.sprite.x;
 		}
-		server.socket.emit('user_move', pos);
-	}
-	else if (game.input.keyboard.isDown(Phaser.Keyboard.S)) {
-		player_sprite.move("down");
-		var pos = {
-			user: player,
-			x: player_sprite.x,
-			y: player_sprite.y,
-			rotation: player_sprite.rotation
+		else if (game.input.keyboard.isDown(Phaser.Keyboard.S)) {
+			player_sprite.move("down");
+			var pos = {
+				user: player,
+				x: player_sprite.x,
+				y: player_sprite.y,
+				rotation: player_sprite.rotation
+			}
+			server.socket.emit('user_move', pos);
+			game.camera.y = player_sprite.sprite.y;
 		}
-		server.socket.emit('user_move', pos);
-	}
-	else if (game.input.keyboard.isDown(Phaser.Keyboard.D)) {
-		player_sprite.move("right");
-		var pos = {
-			user: player,
-			x: player_sprite.x,
-			y: player_sprite.y,
-			rotation: player_sprite.rotation
+		else if (game.input.keyboard.isDown(Phaser.Keyboard.D)) {
+			player_sprite.move("right");
+			var pos = {
+				user: player,
+				x: player_sprite.x,
+				y: player_sprite.y,
+				rotation: player_sprite.rotation
+			}
+			server.socket.emit('user_move', pos);
+			game.camera.x = player_sprite.sprite.x;
 		}
-		server.socket.emit('user_move', pos);
 	}
 }
 
 function playerSync() {
-	if(users[player] != undefined) {
+	if(users[player] != undefined && player_sprite != undefined) {
 		users[player].x = player_sprite.x;
 		users[player].y = player_sprite.y;
 	}
@@ -361,6 +373,9 @@ function renderConnectedUsers(data) {
 	}
 	if(player_sprite == undefined && users[player] != undefined) {
 		player_sprite = new Sprite(users[player].model.name, users[player].model.url, 2, 2);
+		game.physics.startSystem(Phaser.Physics.P2JS);
+		//game.physics.p2.enable(player_sprite.sprite);
+		game.camera.follow(player_sprite.sprite);
 	}
 	for (i in users) {
 		//console.log(users[i]);
@@ -396,24 +411,23 @@ var resizeGame = function () {
 		//Phaser.Canvas.setSmoothingEnabled(game.context, false);
 	}
 
-	game.camera.setSize(width, height);
+	//game.game.camera.setSize(width, height);
 }
 
 
 function preload() {
-	player = getQueryVariable("username");
 	loadImages();
+
+	player = getQueryVariable("username");
 }
 
 function create() {
-
 	httpGetAsync(server.ip + "/world", buildWorld);
 	httpGetAsync(server.ip + "/users", renderConnectedUsers);
-
 	cursors = game.input.keyboard.createCursorKeys();
-
 	console.log("test");
-
+	//game.game.camera = new Phaser.Camera(game, 0, 0, 0, TILE_SIZE*ZOOM_FACTOR*5, TILE_SIZE*ZOOM_FACTOR*5);
+	game.world.setBounds(0, 0, 16*TILE_SIZE*ZOOM_FACTOR, 16*TILE_SIZE*ZOOM_FACTOR);
 	//world = remote.getGlobal("world");
 	//buildWorld();
 
@@ -435,18 +449,22 @@ function create() {
 
 	//chat = new Chat();
 	//loadBitmapData();
-	//game.camera.follow(player_sprite);
+	//game.game.camera.follow(player_sprite);
 	//console.log(remote);
 
 }
 
 function update() {
 	controls();
-	//playerSync();
+	playerSync();
 }
 
 function render() {
 	playerSync();
 	renderConnectedUsers();
+	game.debug.cameraInfo(game.camera, 32, 32);
+	if(player_sprite != undefined) {
+    	game.debug.spriteCoords(player_sprite.sprite, 32, 500);
+	}
 	//game.debug.geom(chat.background);
 }
