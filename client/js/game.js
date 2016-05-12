@@ -8,6 +8,7 @@ var player = "";
 var world = {};
 var synced = {};
 var sprites;
+var tile_group;
 
 var CHARACTER_MODELS = [
 	//"assets/white-character.png",
@@ -119,7 +120,10 @@ server.socket.on('user_move', function(move) {
 });
 server.socket.on('place', function(cmd) {
 	console.log("new Tile(" + cmd.block_index + ", " + cmd.x + ", " + cmd.y + ");");
+	console.log(tiles[cmd.y][cmd.x]);
 	tiles[cmd.y][cmd.x] = new Tile(cmd.block_index, cmd.x, cmd.y);
+	//tile_group.add(tiles[cmd.y][cmd.x].sprite);
+	//game.world.sendToBack(tile_group);
 });
 
 function command_handler(msg) {
@@ -137,7 +141,7 @@ function command_handler(msg) {
 		}
 	}
 	else if (com[0] == "list") {
-		list_available_commands();
+		list_available_blocks();
 	}
 	else if (com[0] == "help") {
 		help();
@@ -169,6 +173,17 @@ function place_block(block_index, x, y) {
 		y: y
 	}
 	server.socket.emit('place', cmd);
+}
+
+function list_available_blocks() {
+	$('#messages').append($('<li>').text("Available blocks:"));
+	for( i in tileset) {
+		$('#messages').append($('<li>').text(i + ": " + tileset[i].name));
+	}
+}
+
+function help() {
+
 }
 
 /*
@@ -327,8 +342,18 @@ var tileset = [
 	},
 	{
 		name: "floor",
-		url: "./assets/floor.png",
+		url: "./assets/Ground_Tile.png",
 		collideable: false
+	},
+	{
+		name: "road",
+		url: "./assets/Road.png",
+		collideable: false
+	},
+	{
+		name: "house",
+		url: "./assets/House.png",
+		collideable: true
 	}
 ];
 
@@ -357,6 +382,8 @@ function buildWorld(data) {
 		for (j in world[i]) {
 			console.log(world[i][j]);
 			temp.push(new Tile(world[i][j], x, y));
+			//tile_group.add(temp[temp.length-1].sprite);
+			//game.world.sendToBack(tile_group);
 			x++;
 		}
 		tiles.push(temp);
@@ -432,14 +459,17 @@ function renderConnectedUsers(data) {
 		game.physics.startSystem(Phaser.Physics.P2JS);
 		//game.physics.p2.enable(player_sprite.sprite);
 		game.camera.follow(player_sprite.sprite);
+		sprites.add(player_sprite.sprite);
 	}
 	for (i in users) {
 		//console.log(users[i]);
 		if(users[i].username != player && users[i].connected) {
+			console.log(users[i]);
 			if(user_sprites[users[i].username] == undefined) {
 				console.log("Creating: \n" +
 					"\tuser_sprites[" + users[i].username + "] = new Sprite(" + users[i].model.name + ", " + users[i].model.url + ", " + users[i].x + ", " + users[i].y + ");");
 				user_sprites[users[i].username] = new Sprite(users[i].model.name, users[i].model.url, users[i].x, users[i].y);
+				sprites.add(user_sprites[users[i].username].sprite);
 			} else {
 				console.log("Updating: \n" +
 					"\tuser_sprites[" + users[i].username + "].setX(" + users[i].x + ");\n" +
@@ -450,11 +480,10 @@ function renderConnectedUsers(data) {
 				user_sprites[users[i].username].setY(users[i].y);
 				user_sprites[users[i].username].setRotation(ROTATIONS[users[i].rotation]);
 				user_sprites[users[i].username].updateLocation();
-				sprites.add(user_sprites[users[i].username].sprite);
-				game.world.bringToTop(sprites);
 			}
 		}
 	}
+	game.world.bringToTop(sprites);
 }
 
 
@@ -483,6 +512,7 @@ function preload() {
 
 function create() {
 	sprites = game.add.group();
+	tile_group = game.add.group();
 	httpGetAsync(server.ip + "/world", buildWorld);
 	httpGetAsync(server.ip + "/users", renderConnectedUsers);
 	cursors = game.input.keyboard.createCursorKeys();

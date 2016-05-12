@@ -25,8 +25,18 @@ var tileset = [
 	},
 	{
 		name: "floor",
-		url: "./assets/floor.png",
+		url: "./assets/Ground_Tile.png",
 		collideable: false
+	},
+	{
+		name: "road",
+		url: "./assets/Road.png",
+		collideable: false
+	},
+	{
+		name: "house",
+		url: "./assets/House.png",
+		collideable: true
 	}
 ];
 
@@ -173,7 +183,7 @@ io.on('connection', function(socket){
 			users[move.user].x = move.x;
 			users[move.user].y = move.y;
 			users[move.user].rotation = move.rotation;
-			console.log("{move} " + move.user + ": " + move.x + ", " + move.y + " (" + ROTATIONS[move.rotation] + ")")
+			console.log("{move} " + move.user + ": " + move.x + ", " + move.y + " (" + ROTATIONS[move.rotation] + ")");
 		}
 		io.emit('user_move', move);
 	});
@@ -181,6 +191,7 @@ io.on('connection', function(socket){
 		//console.log(users);
 		//console.log(move);
 		console.log("{place} " + cmd.user + ": " + tileset[cmd.block_index].name + " at " + cmd.x + ", " + cmd.y);
+		world[cmd.y][cmd.x] = cmd.block_index;
 		io.emit('place', cmd);
 	});
 });
