@@ -17,6 +17,19 @@ var CHARACTER_MODELS = [
 	}
 ];
 
+var tileset = [
+	{
+		name: "wall",
+		url: "./assets/wall.png",
+		collideable: true
+	},
+	{
+		name: "floor",
+		url: "./assets/floor.png",
+		collideable: false
+	}
+];
+
 var ROTATIONS = ["left", "right", "up", "down"];
 
 var users = {};
@@ -155,7 +168,12 @@ io.on('connection', function(socket){
 		}
 		io.emit('user_move', move);
 	});
-
+	socket.on('place', function(cmd) {
+		//console.log(users);
+		//console.log(move);
+		console.log("{place} " + cmd.user + ": " + tileset[cmd.block_index].name + " at " + cmd.x + ", " + cmd.y);
+		io.emit('place', cmd);
+	});
 });
 
 http.listen(3000, function(){

@@ -77,7 +77,12 @@ $('form').submit(function(){
 	msg.timestamp = getTime();
 	msg.from = getQueryVariable("username");
 	msg.text = $('#m').val();
-	server.socket.emit('message', msg);
+	if(msg.text[0] == '/') {
+		command_handler(msg.text);
+	}
+	else {
+		server.socket.emit('message', msg);
+	}
 	$('#m').val('');
 	return false;
 });
@@ -97,13 +102,68 @@ server.socket.on('message', function(msg){
 	$('#messages').append($('<li>').text(msg));
 });
 server.socket.on('user_move', function(move) {
+	console.log("{move} " + move.user + ": " + move.x + ", " + move.y + " (" + ROTATIONS[move.rotation] + ")");
+
 	if(users[move.user] != undefined) {
 		users[move.user].x = move.x;
 		users[move.user].y = move.y;
 		users[move.user].rotation = move.rotation;
 	}
+	renderConnectedUsers();
+});
+server.socket.on('place', function(cmd) {
+	console.log("new Tile(" + cmd.block_index + ", " + cmd.x + ", " + cmd.y + ");");
+	tiles[cmd.y][cmd.x] = new Tile(cmd.block_index, cmd.x, cmd.y);
 });
 
+function command_handler(msg) {
+	var com = msg.slice(1).split(' ');
+	//console.log(com);
+	if(com[0] == "place") {
+		if(com.length == 2) {
+			place_block(parseInt(com[1]));
+		}
+		else if (com.length == 4) {
+			place_block(parseInt(com[1]), parseInt(com[2]), parseInt(com[3]));
+		}
+		else {
+			$('#messages').append($('<li>').text("Invalid number of operands"));
+		}
+	}
+	else if (com[0] == "list") {
+		list_available_commands();
+	}
+	else if (com[0] == "help") {
+		help();
+	}
+}
+
+function place_block(block_index, x, y) {
+	console.log("place_block(" + block_index + ", " + x + ", " + y + ");");
+	if(x == undefined && y == undefined) {
+		x = player_sprite.x;
+		y = player_sprite.y;
+		if(ROTATIONS[player_sprite.rotation] == "up") {
+			y--;
+		}
+		else if(ROTATIONS[player_sprite.rotation] == "down") {
+			y++;
+		}
+		else if(ROTATIONS[player_sprite.rotation] == "left") {
+			x--;
+		}
+		else if(ROTATIONS[player_sprite.rotation] == "right") {
+			x++;
+		}
+	}
+	var cmd = {
+		user: player,
+		block_index: block_index,
+		x: x,
+		y: y
+	}
+	server.socket.emit('place', cmd);
+}
 
 /*
 	-----------------
@@ -177,8 +237,9 @@ function Sprite(name, url, x, y) {
 		}
 	}
 	this.updateLocation = function() {
-		this.sprite.x = this.getX(); // ADD LERP
-		this.sprite.y = this.getY(); // ADD LERP
+		//this.sprite.x = this.getX(); // ADD LERP
+		//this.sprite.y = this.getY(); // ADD LERP
+		game.add.tween(this.sprite).to( {x: this.getX(), y: this.getY() }, this.moveThreshold, null, true);
 		//console.log(this.sprite.scale.x);
 		//this.sprite.scale.x = Math.abs(this.sprite.scale.x) - (this.rotation % 2) * 2 * Math.abs(this.sprite.scale.x);
 		if(ROTATIONS[this.rotation] == "up") {
@@ -391,6 +452,7 @@ function renderConnectedUsers(data) {
 				);
 				user_sprites[users[i].username].setX(users[i].x);
 				user_sprites[users[i].username].setY(users[i].y);
+				user_sprites[users[i].username].setRotation(users[i].rotation);
 				user_sprites[users[i].username].updateLocation();
 			}
 		}
@@ -456,15 +518,17 @@ function create() {
 
 function update() {
 	controls();
-	playerSync();
 }
 
 function render() {
 	playerSync();
-	renderConnectedUsers();
-	game.debug.cameraInfo(game.camera, 32, 32);
+	//playerSync();
+	//renderConnectedUsers();
+	//game.debug.cameraInfo(game.camera, 32, 32);
+	/*
 	if(player_sprite != undefined) {
     	game.debug.spriteCoords(player_sprite.sprite, 32, 500);
 	}
+	*/
 	//game.debug.geom(chat.background);
 }

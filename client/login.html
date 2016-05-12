@@ -19,9 +19,9 @@
 						document.getElementsByClassName('server_result')[0].style.color = "green";
 						document.getElementsByName('server')[0].style.display = "none";
 						document.getElementsByName('server_button')[0].style.display = "none";
-						var gServer = remote.getGlobal("server");
-						gServer.ip = server;
-						console.log(remote.getGlobal("server"));
+						//var gServer = remote.getGlobal("server");
+						//gServer.ip = server;
+						//console.log(remote.getGlobal("server"));
 				    }
 				).fail(function() {
 					console.log("failure");
@@ -50,15 +50,6 @@
 					   }
 				    }
 				);
-			}
-			function processInput() {
-
-				const remote = require('electron').remote;
-				var player = remote.getGlobal("player");
-				var server = remote.getGlobal("server");
-				player.name = username;
-
-				window.location.href = "game.html";
 			}
 		</script>
 	</head>
