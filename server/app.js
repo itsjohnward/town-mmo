@@ -33,6 +33,7 @@ var tileset = [
 var ROTATIONS = ["left", "right", "up", "down"];
 
 var users = {};
+var connected_users = {};
 var messages = [];
 var server = {};
 
@@ -54,9 +55,11 @@ var user = function(_username, _password, _ip) {
 	this.connect = function(_ip) {
 		ip = _ip;
 		connected = true;
+		connected_users[this.username] = this;
 	}
 	this.disconnect = function() {
 		connected = false;
+		delete connected_users[this.username];
 	}
 }
 
@@ -89,6 +92,12 @@ app.get('/users', function (req, res) {
 	//res.send('Got a GET request at /user');
 	console.log('Got a GET request at /users');
 	res.send(users);
+});
+
+app.get('/connected_users', function (req, res) {
+	//res.send('Got a GET request at /user');
+	console.log('Got a GET request at /connected_users');
+	res.send(connected_users);
 });
 
 app.get('/user/:username', function (req, res) {

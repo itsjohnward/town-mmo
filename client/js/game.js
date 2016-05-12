@@ -7,6 +7,7 @@ var user_sprites = {}
 var player = "";
 var world = {};
 var synced = {};
+var sprites;
 
 var CHARACTER_MODELS = [
 	//"assets/white-character.png",
@@ -93,22 +94,27 @@ server.socket.on('joined', function(user) {
 	});
 	console.log(user + " just joined the chat");
 })
+
+// Array Remove - By John Resig (MIT Licensed)
 server.socket.on('left', function(user) {
 	$('#messages').append($('<li>').text(user + " just left the chat."));
-	delete users[user];
-	console.log(user + " just left the chat");
+	if(user_sprites[user] != undefined) {
+		user_sprites[user].sprite.kill();
+		delete user_sprites[user];
+		console.log(user + " just left the chat");
+	}
 })
 server.socket.on('message', function(msg){
 	$('#messages').append($('<li>').text(msg));
 });
 server.socket.on('user_move', function(move) {
 	console.log("{move} " + move.user + ": " + move.x + ", " + move.y + " (" + ROTATIONS[move.rotation] + ")");
-
 	if(users[move.user] != undefined) {
 		users[move.user].x = move.x;
 		users[move.user].y = move.y;
 		users[move.user].rotation = move.rotation;
 	}
+	playerSync();
 	renderConnectedUsers();
 });
 server.socket.on('place', function(cmd) {
@@ -203,6 +209,7 @@ function coord_to_pixels(c) {
 }
 
 function Sprite(name, url, x, y) {
+
 	this.move = function(direction) {
 		if((this.moveTime + this.moveThreshold) < game.time.now) {
 			if(ROTATIONS[this.rotation] != direction) {
@@ -263,25 +270,13 @@ function Sprite(name, url, x, y) {
 		return this.y * ZOOM_FACTOR * TILE_SIZE + (TILE_SIZE*ZOOM_FACTOR)/2;
 	}
 	this.setX = function(x) {
-		this.x = x; // ADD LERP
+		this.x = x;
 	}
 	this.setY = function(y) {
-		this.y = y; // ADD LERP
+		this.y = y;
 	}
 	this.setRotation = function(rotation) {
-		if(rotation == "up") {
-			this.sprite.angle = 90;
-			this.sprite.scale.x = Math.abs(this.sprite.scale.x);
-		} else if(rotation == "down"){
-			this.sprite.angle = -90;
-			this.sprite.scale.x = Math.abs(this.sprite.scale.x);
-		} else if(rotation == "left") {
-			this.sprite.angle = 0;
-			this.sprite.scale.x = -Math.abs(this.sprite.scale.x);
-		} else if(rotation == "right") {
-			this.sprite.angle = 0;
-			this.sprite.scale.x = Math.abs(this.sprite.scale.x);
-		}
+		//this.rotation = rotation;
 	}
 
 	this.name = name;
@@ -440,7 +435,7 @@ function renderConnectedUsers(data) {
 	}
 	for (i in users) {
 		//console.log(users[i]);
-		if(users[i].username != player) {
+		if(users[i].username != player && users[i].connected) {
 			if(user_sprites[users[i].username] == undefined) {
 				console.log("Creating: \n" +
 					"\tuser_sprites[" + users[i].username + "] = new Sprite(" + users[i].model.name + ", " + users[i].model.url + ", " + users[i].x + ", " + users[i].y + ");");
@@ -448,12 +443,15 @@ function renderConnectedUsers(data) {
 			} else {
 				console.log("Updating: \n" +
 					"\tuser_sprites[" + users[i].username + "].setX(" + users[i].x + ");\n" +
-					"\tuser_sprites[" + users[i].username + "].setY(" + users[i].y + ");\n"
+					"\tuser_sprites[" + users[i].username + "].setY(" + users[i].y + ");\n" +
+					"\tuser_sprites[" + users[i].username + "].setRotation(" + ROTATIONS[users[i].rotation] + ");\n"
 				);
 				user_sprites[users[i].username].setX(users[i].x);
 				user_sprites[users[i].username].setY(users[i].y);
-				user_sprites[users[i].username].setRotation(users[i].rotation);
+				user_sprites[users[i].username].setRotation(ROTATIONS[users[i].rotation]);
 				user_sprites[users[i].username].updateLocation();
+				sprites.add(user_sprites[users[i].username].sprite);
+				game.world.bringToTop(sprites);
 			}
 		}
 	}
@@ -484,6 +482,7 @@ function preload() {
 }
 
 function create() {
+	sprites = game.add.group();
 	httpGetAsync(server.ip + "/world", buildWorld);
 	httpGetAsync(server.ip + "/users", renderConnectedUsers);
 	cursors = game.input.keyboard.createCursorKeys();
@@ -521,7 +520,6 @@ function update() {
 }
 
 function render() {
-	playerSync();
 	//playerSync();
 	//renderConnectedUsers();
 	//game.debug.cameraInfo(game.camera, 32, 32);
