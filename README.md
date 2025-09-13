@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="./client/assets/player.png" alt="Glass of Water" />
+  <img src="./client/assets/player.png" alt="Player Character" />
 </p>
 
 <div align="center">
 
-# Running Water
+# Town: A Little MMO
 
 </div>
 
